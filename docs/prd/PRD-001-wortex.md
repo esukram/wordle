@@ -3,7 +3,7 @@ id: PRD-001
 title: Wortex — bilingual daily word-guessing game
 status: approved
 created: 2026-07-05
-research: []
+research: [RES-001, RES-002]
 adrs: []
 milestones: []
 ---
@@ -174,18 +174,29 @@ documentation contain no reference to any third-party game or publisher.
   inspection.
 - The browser devtools network tab shows only same-origin requests —
   verified manually.
-- A case-insensitive grep over the repository for third-party game/publisher
-  names returns no hits — verified by `grep -ri` during review.
+- A case-insensitive grep for third-party game/publisher names over the
+  product surface — source code, word-list data, UI strings, README — returns
+  no hits; provenance documents (`docs/research/`, `docs/audit/`) are exempt,
+  as their citation URLs necessarily name upstream sources — verified by
+  `grep -ri --exclude-dir=research --exclude-dir=audit` during review.
 
 ## Open Questions
 
-- **Word list sourcing**: which freely licensed sources provide (a) an
-  English 5-letter solution list + larger valid-guess list, and (b) a German
-  equivalent after excluding ä/ö/ü/ß words? What license attribution do they
-  require, and are the umlaut-free German lists still large enough (target:
-  ≥1000 solutions, ≥5000 valid guesses per Language)?
-- **Daily Puzzle epoch**: which fixed start date anchors the date→word
-  mapping (affects puzzle numbering and list cycling)?
-- **Solution-list ordering**: shuffled-once fixed order (spoiler-resistant,
-  committed) vs. index arithmetic over an alphabetical list (predictable) —
-  small decision, likely settled during planning.
+- **Word list sourcing** — answered in [RES-001](../research/RES-001-word-list-sourcing.md):
+  both Languages meet the targets from public-domain/CC0 sources with
+  frequency-derived solution lists (only obligation: a CC-BY-SA attribution
+  note naming a corpus, no game/publisher).
+- **Daily Puzzle epoch** — researched in [RES-002](../research/RES-002-daily-mapping.md):
+  free project decision; proposed 2026-07-01, pending acceptance.
+- **Solution-list ordering** — answered in [RES-002](../research/RES-002-daily-mapping.md):
+  shuffled-once fixed order per Language, committed, indexed `dayIndex % N`;
+  final sign-off with the wrap policy in `/hive:waggle`.
+- **Wrap/exhaustion policy** (surfaced by RES-002): after N days the
+  solution list repeats — acceptable, or is append-only list growth planned?
+  One sentence in the `/hive:waggle` ADR settles it.
+- Settled 2026-07-05 (human): solution words may include inflected forms
+  (plurals, conjugations) — lemma-only German sources miss the size target
+  (see [RES-001](../research/RES-001-word-list-sourcing.md)).
+- Settled 2026-07-05 (human): R7's no-third-party-reference rule covers the
+  product surface only; provenance documents (`docs/research/`,
+  `docs/audit/`) are exempt — R7's acceptance criterion amended accordingly.
