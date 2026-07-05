@@ -19,6 +19,8 @@ import {
 import { layoutRows } from './keyboard.js';
 import { dayIndex, dailySolution } from './daily.js';
 import { createStorage } from './storage.js';
+import { updateStats } from './stats.js';
+import { renderStats } from './statsview.js';
 
 const WORD_LENGTH = 5;
 
@@ -34,6 +36,11 @@ export function init(doc) {
   const modeDailyBtn = doc.getElementById('mode-daily');
   const modeFreeBtn = doc.getElementById('mode-free');
   const newRoundBtn = doc.getElementById('new-round');
+
+  const statsButton = doc.getElementById('stats-button');
+  const statsModal = doc.getElementById('stats-modal');
+  const statsContent = doc.getElementById('stats-content');
+  const statsClose = doc.getElementById('stats-close');
 
   const storage = createStorage();
   const today = dayIndex();
@@ -134,6 +141,31 @@ export function init(doc) {
     }
   }
 
+  // --- Statistics --------------------------------------------------------
+  function openStats(stats) {
+    statsContent.innerHTML = renderStats(stats);
+    statsModal.classList.remove('hidden');
+  }
+
+  function closeStats() {
+    statsModal.classList.add('hidden');
+  }
+
+  // Record a finished Daily round exactly once. A restored finished round
+  // never routes through here (it skips the submit path), and the
+  // lastDayIndex guard stops any double-count for today.
+  function recordDailyResult() {
+    const stats = storage.getStats(LANG);
+    if (stats.lastDayIndex === today) return;
+    const updated = updateStats(stats, {
+      won: round.status === 'won',
+      attempts: round.guesses.length,
+      dayIndex: today,
+    });
+    storage.setStats(LANG, updated);
+    openStats(updated);
+  }
+
   function reject() {
     const rowEl = rows[round.guesses.length].row;
     rowEl.classList.remove('shake');
@@ -161,7 +193,11 @@ export function init(doc) {
       renderBoard();
       renderKeyboard();
       // Only the Daily Puzzle persists; Free Play writes nothing (PRD-001 R3).
-      if (mode === 'daily') storage.setDaily(LANG, serializeRound(round, today));
+      if (mode === 'daily') {
+        storage.setDaily(LANG, serializeRound(round, today));
+        // On round end, record Statistics and surface them (PRD-001 R5).
+        if (round.status !== 'playing') recordDailyResult();
+      }
       announceEnd();
       return;
     }
@@ -213,6 +249,9 @@ export function init(doc) {
     round = loadDailyRound();
     refresh();
   }
+
+  statsButton.addEventListener('click', () => openStats(storage.getStats(LANG)));
+  statsClose.addEventListener('click', closeStats);
 
   modeFreeBtn.addEventListener('click', startFreeRound);
   modeDailyBtn.addEventListener('click', startDaily);
