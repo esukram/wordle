@@ -4,7 +4,7 @@ title: Wortex — bilingual daily word-guessing game
 status: approved
 created: 2026-07-05
 research: [RES-001, RES-002]
-adrs: []
+adrs: [ADR-0001, ADR-0002]
 milestones: []
 ---
 
@@ -188,15 +188,19 @@ documentation contain no reference to any third-party game or publisher.
   note naming a corpus, no game/publisher).
 - **Daily Puzzle epoch** — researched in [RES-002](../research/RES-002-daily-mapping.md):
   epoch is **2026-07-01** (accepted 2026-07-05 by human).
-- **Solution-list ordering** — answered in [RES-002](../research/RES-002-daily-mapping.md):
-  shuffled-once fixed order per Language, committed, indexed `dayIndex % N`;
-  final sign-off with the wrap policy in `/hive:waggle`.
-- **Wrap/exhaustion policy** (surfaced by RES-002): after N days the
-  solution list repeats — acceptable, or is append-only list growth planned?
-  One sentence in the `/hive:waggle` ADR settles it.
+- **Solution-list ordering** — answered in [RES-002](../research/RES-002-daily-mapping.md);
+  decided in [ADR-0002](../adr/ADR-0002-daily-word-selection.md): shuffled-once
+  committed play order per Language.
+- **Wrap/exhaustion policy** — decided in
+  [ADR-0002](../adr/ADR-0002-daily-word-selection.md): normalized modulo wrap
+  as backstop; appending before the first wrap is the sanctioned growth path.
 - Settled 2026-07-05 (human): solution words may include inflected forms
   (plurals, conjugations) — lemma-only German sources miss the size target
   (see [RES-001](../research/RES-001-word-list-sourcing.md)).
+- localStorage key schema: not ADR-worthy (reversible via versioned keys);
+  the planner owns the layout.
+- Word-list file format (JS module vs. fetched JSON): not ADR-worthy
+  (trivially reversible); picked during planning.
 - Settled 2026-07-05 (human): R7's no-third-party-reference rule covers the
   product surface only; provenance documents (`docs/research/`,
   `docs/audit/`) are exempt — R7's acceptance criterion amended accordingly.
