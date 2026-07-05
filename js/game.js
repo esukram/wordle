@@ -30,6 +30,32 @@ export function submitGuess(round, word) {
   return { round: { ...round, guesses, status } };
 }
 
+// Rebuild a full round from a stored word list by replaying each word through
+// submitGuess, so marks and status are recomputed rather than trusted from
+// storage. Pure and DOM-free (PRD-001 R2, R6).
+export function restoreRound(words, solution, guessSet) {
+  let round = createRound(solution, guessSet);
+  for (const word of words) {
+    round = submitGuess(round, word).round;
+  }
+  return round;
+}
+
+// Round → the stored daily shape { dayIndex, guesses: [word...], status }.
+export function serializeRound(round, dayIndex) {
+  return {
+    dayIndex,
+    guesses: round.guesses.map((g) => g.word),
+    status: round.status,
+  };
+}
+
+// A stored daily state is worth restoring only when it belongs to today's
+// puzzle; a differing (stale) dayIndex means a new date has begun.
+export function isFreshDaily(stored, todayIndex) {
+  return stored != null && stored.dayIndex === todayIndex;
+}
+
 // Best-known state per letter across all guesses, for coloring the on-screen
 // keyboard. Precedence: correct beats present beats absent.
 const RANK = { absent: 0, present: 1, correct: 2 };
