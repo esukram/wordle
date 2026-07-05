@@ -7,3 +7,5 @@
 - 2026-07-05T15:44Z · adr-accepted · [ADR-0002](../adr/ADR-0002-daily-word-selection.md) · option: local-midnight epoch + Math.round day index, shuffled-once committed play order, normalized modulo wrap; glossary gaps: Epoch, Day index, Solution list, Valid-guess list · by: human
 - 2026-07-05T16:01Z · plan-reviewed · [PLAN-001](../plans/PLAN-001-wortex.yaml) · review: passed (context, dag, sizing), 2 iterations · by: human
 - 2026-07-05T16:02Z · plan-approved · [PLAN-001](../plans/PLAN-001-wortex.yaml) · — · by: human
+- 2026-07-05T16:13Z · plan-materialized · [PLAN-001](../plans/PLAN-001-wortex.yaml) · milestone: 1; epic: #3; tasks: #4–#15 · by: human
+- 2026-07-05T16:13Z · prd-planned · [PRD-001](../prd/PRD-001-wortex.md) · plan: [PLAN-001](../plans/PLAN-001-wortex.yaml); milestone: 1 · by: human

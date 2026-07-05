@@ -1,7 +1,7 @@
 plan: PLAN-001
 prd: PRD-001
 adrs: [ADR-0001, ADR-0002]
-status: reviewed
+status: materialized
 review: passed
 reviewed_by: [context, dag, sizing]
 reviewed_at: 2026-07-05
@@ -59,7 +59,7 @@ tasks:
     adr_refs: [ADR-0001]
     depends_on: []
     parallel_ok: true
-    issue: null
+    issue: 4
     body: |
       **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R7 · **ADR:** ADR-0001
 
@@ -130,7 +130,7 @@ tasks:
     adr_refs: [ADR-0001, ADR-0002]
     depends_on: [T1]
     parallel_ok: true
-    issue: null
+    issue: 6
     body: |
       **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R1, PRD-001-R4 · **ADR:** ADR-0001, ADR-0002
 
@@ -193,7 +193,7 @@ tasks:
     adr_refs: [ADR-0001, ADR-0002]
     depends_on: [T1]
     parallel_ok: true
-    issue: null
+    issue: 7
     body: |
       **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R1, PRD-001-R4 · **ADR:** ADR-0001, ADR-0002
 
@@ -256,7 +256,7 @@ tasks:
     adr_refs: []
     depends_on: [T1]
     parallel_ok: true
-    issue: null
+    issue: 8
     body: |
       **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R1
 
@@ -303,7 +303,7 @@ tasks:
     adr_refs: [ADR-0002]
     depends_on: [T2, T3]
     parallel_ok: true
-    issue: null
+    issue: 10
     body: |
       **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R2 · **ADR:** ADR-0002
 
@@ -359,7 +359,7 @@ tasks:
     adr_refs: []
     depends_on: [T1]
     parallel_ok: true
-    issue: null
+    issue: 9
     body: |
       **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R5, PRD-001-R6
 
@@ -422,7 +422,7 @@ tasks:
     adr_refs: []
     depends_on: []
     parallel_ok: true
-    issue: null
+    issue: 5
     body: |
       **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R1, PRD-001-R7
 
@@ -478,7 +478,7 @@ tasks:
     adr_refs: []
     depends_on: [T2, T4, T7]
     parallel_ok: true
-    issue: null
+    issue: 11
     body: |
       **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R1, PRD-001-R4
 
@@ -551,7 +551,7 @@ tasks:
     adr_refs: [ADR-0002]
     depends_on: [T5, T6, T8]
     parallel_ok: false
-    issue: null
+    issue: 12
     body: |
       **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R2, PRD-001-R6 · **ADR:** ADR-0002
 
@@ -617,7 +617,7 @@ tasks:
     adr_refs: []
     depends_on: [T8, T9]
     parallel_ok: false
-    issue: null
+    issue: 13
     body: |
       **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R3
 
@@ -675,7 +675,7 @@ tasks:
     adr_refs: []
     depends_on: [T6, T9]
     parallel_ok: false
-    issue: null
+    issue: 14
     body: |
       **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R5
 
@@ -734,7 +734,7 @@ tasks:
     adr_refs: []
     depends_on: [T6, T8, T9, T10, T11]
     parallel_ok: false
-    issue: null
+    issue: 15
     body: |
       **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R4
 
