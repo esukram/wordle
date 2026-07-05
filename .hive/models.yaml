@@ -1,0 +1,7 @@
+active: quality
+agents:
+  scout: fable
+  architect: fable
+  planner: fable
+  plan-reviewer: fable
+  worker: opus
