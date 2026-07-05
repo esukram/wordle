@@ -4,8 +4,6 @@
 // wires the page when a document is present. All game logic lives in the
 // DOM-free modules game.js / keyboard.js / scoring.js.
 
-import { GUESSES_EN } from '../data/words-en.js';
-import { SOLUTIONS_EN } from '../data/solutions-en.js';
 import {
   createRound,
   submitGuess,
@@ -21,12 +19,9 @@ import { dayIndex, dailySolution } from './daily.js';
 import { createStorage } from './storage.js';
 import { updateStats } from './stats.js';
 import { renderStats } from './statsview.js';
+import { defaultLanguage, LANGUAGES } from './language.js';
 
 const WORD_LENGTH = 5;
-
-// Daily Puzzle is the default mode; Free Play / Language selection land in
-// later tasks, so the active Language is fixed to English for now.
-const LANG = 'en';
 
 export function init(doc) {
   const board = doc.getElementById('board');
@@ -42,11 +37,18 @@ export function init(doc) {
   const statsContent = doc.getElementById('stats-content');
   const statsClose = doc.getElementById('stats-close');
 
+  const langToggle = doc.getElementById('lang-toggle');
+
   const storage = createStorage();
   const today = dayIndex();
-  const dailyWord = dailySolution(LANG);
 
-  const guessSet = new Set(GUESSES_EN);
+  // Active Language: the persisted choice, else the browser default. Every
+  // per-Language source (guess dictionary, Daily solution) follows it.
+  const navLang = typeof navigator !== 'undefined' ? navigator.language : undefined;
+  let lang = storage.getLang() ?? defaultLanguage(navLang);
+  let config = LANGUAGES[lang];
+  let dailyWord = dailySolution(lang);
+  let guessSet = new Set(config.guesses);
 
   // 'daily' persists to storage and updates Statistics; 'free' (PRD-001 R3)
   // writes nothing — only the Daily flow may reach a storage writer.
@@ -58,11 +60,11 @@ export function init(doc) {
   // is discarded so the new day starts fresh (ADR-0002, no replay of a
   // finished puzzle before the next date).
   function loadDailyRound() {
-    const stored = storage.getDaily(LANG);
+    const stored = storage.getDaily(lang);
     if (isFreshDaily(stored, today)) {
       return restoreRound(stored.guesses, dailyWord, guessSet);
     }
-    if (stored) storage.clearDaily(LANG);
+    if (stored) storage.clearDaily(lang);
     return createRound(dailyWord, guessSet);
   }
 
@@ -104,22 +106,27 @@ export function init(doc) {
   }
 
   // --- Keyboard ----------------------------------------------------------
+  // Rebuilt on Language switch: QWERTY ↔ QWERTZ swap the letter rows.
   const keyEls = new Map();
-  keyboard.textContent = '';
-  for (const keys of layoutRows(LANG)) {
-    const rowEl = doc.createElement('div');
-    rowEl.className = 'keyboard-row';
-    for (const { key, label, wide } of keys) {
-      const btn = doc.createElement('button');
-      btn.type = 'button';
-      btn.className = wide ? 'key wide' : 'key';
-      btn.textContent = label;
-      btn.addEventListener('click', () => handleKey(key));
-      rowEl.appendChild(btn);
-      if (key.length === 1) keyEls.set(key, btn);
+  function buildKeyboard() {
+    keyEls.clear();
+    keyboard.textContent = '';
+    for (const keys of layoutRows(lang)) {
+      const rowEl = doc.createElement('div');
+      rowEl.className = 'keyboard-row';
+      for (const { key, label, wide } of keys) {
+        const btn = doc.createElement('button');
+        btn.type = 'button';
+        btn.className = wide ? 'key wide' : 'key';
+        btn.textContent = label;
+        btn.addEventListener('click', () => handleKey(key));
+        rowEl.appendChild(btn);
+        if (key.length === 1) keyEls.set(key, btn);
+      }
+      keyboard.appendChild(rowEl);
     }
-    keyboard.appendChild(rowEl);
   }
+  buildKeyboard();
 
   function renderKeyboard() {
     const states = keyStates(round.guesses);
@@ -155,14 +162,14 @@ export function init(doc) {
   // never routes through here (it skips the submit path), and the
   // lastDayIndex guard stops any double-count for today.
   function recordDailyResult() {
-    const stats = storage.getStats(LANG);
+    const stats = storage.getStats(lang);
     if (stats.lastDayIndex === today) return;
     const updated = updateStats(stats, {
       won: round.status === 'won',
       attempts: round.guesses.length,
       dayIndex: today,
     });
-    storage.setStats(LANG, updated);
+    storage.setStats(lang, updated);
     openStats(updated);
   }
 
@@ -194,7 +201,7 @@ export function init(doc) {
       renderKeyboard();
       // Only the Daily Puzzle persists; Free Play writes nothing (PRD-001 R3).
       if (mode === 'daily') {
-        storage.setDaily(LANG, serializeRound(round, today));
+        storage.setDaily(lang, serializeRound(round, today));
         // On round end, record Statistics and surface them (PRD-001 R5).
         if (round.status !== 'playing') recordDailyResult();
       }
@@ -240,7 +247,7 @@ export function init(doc) {
 
   function startFreeRound() {
     mode = 'free';
-    round = createRound(randomSolution(SOLUTIONS_EN), guessSet);
+    round = createRound(randomSolution(config.solutions), guessSet);
     refresh();
   }
 
@@ -250,14 +257,32 @@ export function init(doc) {
     refresh();
   }
 
-  statsButton.addEventListener('click', () => openStats(storage.getStats(LANG)));
+  // Flip en ↔ de: persist the choice and re-wire every per-Language source.
+  // The two Daily Puzzles are independent — switching restores the other
+  // Language's own daily state and Statistics; Free Play starts a fresh round
+  // from the other Language's solutions.
+  function switchLanguage() {
+    lang = lang === 'en' ? 'de' : 'en';
+    storage.setLang(lang);
+    config = LANGUAGES[lang];
+    dailyWord = dailySolution(lang);
+    guessSet = new Set(config.guesses);
+    if (langToggle) langToggle.textContent = lang.toUpperCase();
+    buildKeyboard();
+    if (mode === 'free') startFreeRound();
+    else startDaily();
+  }
+
+  statsButton.addEventListener('click', () => openStats(storage.getStats(lang)));
   statsClose.addEventListener('click', closeStats);
 
   modeFreeBtn.addEventListener('click', startFreeRound);
   modeDailyBtn.addEventListener('click', startDaily);
   // In Free Play a new round can start at any time, finished round included.
   newRoundBtn.addEventListener('click', startFreeRound);
+  if (langToggle) langToggle.addEventListener('click', switchLanguage);
 
+  if (langToggle) langToggle.textContent = lang.toUpperCase();
   startDaily();
 }
 
