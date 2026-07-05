@@ -1,7 +1,7 @@
 ---
 id: PRD-001
 title: Wortex — bilingual daily word-guessing game
-status: draft
+status: approved
 created: 2026-07-05
 research: []
 adrs: []
