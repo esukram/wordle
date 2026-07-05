@@ -9,3 +9,6 @@
 - 2026-07-05T16:02Z · plan-approved · [PLAN-001](../plans/PLAN-001-wortex.yaml) · — · by: human
 - 2026-07-05T16:13Z · plan-materialized · [PLAN-001](../plans/PLAN-001-wortex.yaml) · milestone: 1; epic: #3; tasks: #4–#15 · by: human
 - 2026-07-05T16:13Z · prd-planned · [PRD-001](../prd/PRD-001-wortex.md) · plan: [PLAN-001](../plans/PLAN-001-wortex.yaml); milestone: 1 · by: human
+- 2026-07-05T17:21Z · pause-resolved · run-start · dirty working tree (untracked .claude/settings.json, .hive/models.yaml); decision: commit them to main and proceed · by: human
+- 2026-07-05T17:21Z · milestone-implemented · [PLAN-001](../plans/PLAN-001-wortex.yaml) · prd: [PRD-001](../prd/PRD-001-wortex.md); milestone: 1 · by: human
+- 2026-07-05T17:21Z · prd-implemented · [PRD-001](../prd/PRD-001-wortex.md) · plans: [PLAN-001](../plans/PLAN-001-wortex.yaml) · by: human
