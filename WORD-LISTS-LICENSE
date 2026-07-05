@@ -1,0 +1,22 @@
+Word-list attribution and licensing
+====================================
+
+Solution lists (CC BY-SA 4.0)
+-----------------------------
+
+The solution lists shipped in `data/solutions-en.js` and
+`data/solutions-de.js` are derived from the hermitdave/FrequencyWords
+frequency lists, which are built from the OpenSubtitles corpus. The list
+content is licensed under Creative Commons Attribution-ShareAlike 4.0
+International (CC BY-SA 4.0). These derived solution lists are made
+available under the same CC BY-SA 4.0 license.
+
+  Source:  https://github.com/hermitdave/FrequencyWords
+  License: https://creativecommons.org/licenses/by-sa/4.0/
+
+Valid-guess lists (no attribution required)
+-------------------------------------------
+
+The valid-guess lists derive from ENABLE (public domain) for English and
+from enz/german-wordlist (CC0) for German. Public domain and CC0 sources
+require no attribution; they are named here for provenance only.
