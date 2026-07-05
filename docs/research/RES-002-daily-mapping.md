@@ -1,7 +1,7 @@
 ---
 id: RES-002
 prd: PRD-001
-status: open
+status: answered
 questions:
   - "Daily Puzzle epoch: which fixed start date anchors the date→word mapping (affects puzzle numbering and list cycling)?"
   - "Solution-list ordering: shuffled-once fixed order (spoiler-resistant, committed) vs. index arithmetic over an alphabetical list (predictable)?"
@@ -99,4 +99,5 @@ round, together with the wrap policy.
 
 - **A1** (backs Q1): the Daily Puzzle epoch is **2026-07-01** (a date on or
   before Wortex's first release) — what would verify it: human acceptance
-  here or in the `/hive:waggle` ADR that fixes the constant.
+  here or in the `/hive:waggle` ADR that fixes the constant
+  — accepted 2026-07-05 by human

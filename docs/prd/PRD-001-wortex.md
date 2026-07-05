@@ -187,7 +187,7 @@ documentation contain no reference to any third-party game or publisher.
   frequency-derived solution lists (only obligation: a CC-BY-SA attribution
   note naming a corpus, no game/publisher).
 - **Daily Puzzle epoch** — researched in [RES-002](../research/RES-002-daily-mapping.md):
-  free project decision; proposed 2026-07-01, pending acceptance.
+  epoch is **2026-07-01** (accepted 2026-07-05 by human).
 - **Solution-list ordering** — answered in [RES-002](../research/RES-002-daily-mapping.md):
   shuffled-once fixed order per Language, committed, indexed `dayIndex % N`;
   final sign-off with the wrap policy in `/hive:waggle`.
