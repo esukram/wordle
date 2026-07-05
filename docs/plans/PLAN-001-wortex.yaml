@@ -1,0 +1,796 @@
+plan: PLAN-001
+prd: PRD-001
+adrs: [ADR-0001, ADR-0002]
+status: reviewed
+review: passed
+reviewed_by: [context, dag, sizing]
+reviewed_at: 2026-07-05
+milestone_title: "Wortex v1 — bilingual daily word-guessing game"
+milestone_verification:
+  command: "[ ! -d test ] || node --test test/"
+epic:
+  title: "Wortex v1: static bilingual word-guessing game (PRD-001)"
+  body: |
+    **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001 · **ADR:** ADR-0001, ADR-0002
+
+    Build Wortex end to end: a fully client-side, dependency-free five-letter
+    word-guessing game with a Daily Puzzle and Free Play in English and German,
+    per [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md).
+    Word-list derivation is bound by
+    [ADR-0001](https://github.com/esukram/wordle/blob/main/docs/adr/ADR-0001-word-list-sources.md);
+    the Daily Puzzle date→word mapping by
+    [ADR-0002](https://github.com/esukram/wordle/blob/main/docs/adr/ADR-0002-daily-word-selection.md).
+    Canonical vocabulary (Daily Puzzle, Free Play, Language, Statistics, Wortex):
+    [CONTEXT.md](https://github.com/esukram/wordle/blob/main/CONTEXT.md).
+
+    Delivery: static HTML/CSS/JS, ES modules, no build step, no runtime
+    dependencies; unit tests via `node --test` in `test/*.test.js`.
+
+    Task DAG (snapshot at materialization; execution state lives in GitHub):
+
+    ```mermaid
+    graph TD
+      T1[T1 scaffold + license + R7 guard] --> T2[T2 English lists]
+      T1 --> T3[T3 German lists]
+      T1 --> T4[T4 scoring]
+      T1 --> T6[T6 stats + storage]
+      T2 --> T5[T5 daily mapping]
+      T3 --> T5
+      T2 --> T8[T8 round controller + keyboard UI]
+      T4 --> T8
+      T7[T7 HTML shell + CSS] --> T8
+      T5 --> T9[T9 Daily Puzzle mode + persistence]
+      T6 --> T9
+      T8 --> T9
+      T8 --> T10[T10 Free Play]
+      T9 --> T10
+      T6 --> T11[T11 Statistics view]
+      T9 --> T11
+      T6 --> T12[T12 Language switching]
+      T8 --> T12
+      T9 --> T12
+      T10 --> T12
+      T11 --> T12
+    ```
+tasks:
+  - key: T1
+    title: "Repo scaffold: package.json, README, WORD-LISTS-LICENSE, product-surface guard"
+    implements: [PRD-001-R7]
+    adr_refs: [ADR-0001]
+    depends_on: []
+    parallel_ok: true
+    issue: null
+    body: |
+      **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R7 · **ADR:** ADR-0001
+
+      ## Context
+      The repo currently contains only `docs/`, `CONTEXT.md`, `ARCHITECTURE.md`,
+      and `CLAUDE.md` — no source tree. Wortex ships as static, dependency-free
+      HTML/CSS/JS per
+      [PRD-001 R7](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md#r7-static-dependency-free-delivery).
+      Create the project scaffold every later task builds on:
+
+      1. **`package.json`** (new, repo root): exactly
+         `{"name": "wortex", "private": true, "type": "module"}` — no
+         `dependencies`, no `devDependencies`, no lockfile. `"type": "module"`
+         makes plain `.js` files ES modules for both the browser and
+         `node --test`.
+      2. **`README.md`** (new, repo root): what Wortex is (use the vocabulary of
+         [CONTEXT.md](https://github.com/esukram/wordle/blob/main/CONTEXT.md):
+         Daily Puzzle, Free Play, Language, Statistics), how to run it
+         (`python3 -m http.server` from the repo root, open
+         `http://localhost:8000/`), how to run tests (`node --test test/`).
+         The README must not name any third-party game or publisher (R7).
+      3. **`WORD-LISTS-LICENSE`** (new, repo root), per
+         [ADR-0001](https://github.com/esukram/wordle/blob/main/docs/adr/ADR-0001-word-list-sources.md):
+         a CC BY-SA 4.0 attribution notice stating that
+         `data/solutions-en.js` and `data/solutions-de.js` are derived from the
+         hermitdave/FrequencyWords frequency lists (built from the OpenSubtitles
+         corpus), list content licensed CC BY-SA 4.0, with a link to the
+         FrequencyWords repository and to the CC BY-SA 4.0 license; and that the
+         valid-guess lists derive from ENABLE (public domain) and
+         enz/german-wordlist (CC0), which require no attribution. Name corpora
+         only — never any game or publisher.
+      4. **`test/product-surface.test.js`** (new): a `node --test` test that
+         recursively reads every file under the product surface — `index.html`,
+         `README.md`, `package.json`, `WORD-LISTS-LICENSE`, and the `css/`,
+         `js/`, `data/` directories (each only if it exists; skip `docs/`,
+         `test/`, `.git/`, `.hive/`, `.claude/`) — lowercases the content, and
+         asserts none contains a banned substring. Banned substrings: the name
+         of the genre-original word-guessing game this genre is known by, plus
+         the full name and the three-letter initialism of the New York
+         newspaper company that publishes it. Build these strings inside the
+         test via `String.fromCharCode(...)` so the test file itself never
+         contains them literally and stays grep-clean. The same test also reads
+         `package.json` and asserts `dependencies` and `devDependencies` are
+         absent or empty.
+
+      ## Acceptance criteria
+      - `package.json` exists with `"type": "module"` and zero dependencies of
+        any kind; no lockfile is committed.
+      - `README.md` documents the static-server run command and the test
+        command, using CONTEXT.md vocabulary, with no third-party
+        game/publisher names.
+      - `WORD-LISTS-LICENSE` carries the CC BY-SA 4.0 notice for the two
+        solution-list files, naming FrequencyWords/OpenSubtitles as corpus
+        sources and no game or publisher.
+      - `test/product-surface.test.js` fails if a banned name is introduced
+        anywhere on the product surface or a dependency is added.
+
+      ## Verification
+      - `node --test test/product-surface.test.js` — guard passes on the scaffold
+      - `node -e "const p=require('./package.json'); const n=(o)=>o&&Object.keys(o).length; if (p.type!=='module'||n(p.dependencies)||n(p.devDependencies)) process.exit(1)"` — asserts module type and zero dependencies
+      - `test ! -f package-lock.json && test ! -f npm-shrinkwrap.json` — no lockfile committed
+      - `grep -q 'FrequencyWords' WORD-LISTS-LICENSE && grep -qi 'CC BY-SA 4.0' WORD-LISTS-LICENSE` — attribution notice present
+      - `grep -q 'http.server' README.md && grep -q 'node --test' README.md` — run instructions present
+
+  - key: T2
+    title: "English word lists: ENABLE guesses + curated shuffled solutions"
+    implements: [PRD-001-R1, PRD-001-R4]
+    adr_refs: [ADR-0001, ADR-0002]
+    depends_on: [T1]
+    parallel_ok: true
+    issue: null
+    body: |
+      **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R1, PRD-001-R4 · **ADR:** ADR-0001, ADR-0002
+
+      ## Context
+      Derive and commit the English word-list data files per
+      [ADR-0001](https://github.com/esukram/wordle/blob/main/docs/adr/ADR-0001-word-list-sources.md)
+      and [ADR-0002](https://github.com/esukram/wordle/blob/main/docs/adr/ADR-0002-daily-word-selection.md).
+      The repo has `package.json` with `"type": "module"` — all `.js` files are
+      ES modules; tests live in `test/*.test.js` and run with `node --test`.
+      Derivation details: [RES-001](https://github.com/esukram/wordle/blob/main/docs/research/RES-001-word-list-sourcing.md).
+
+      Create:
+      1. **`data/words-en.js`** (new): `export const GUESSES_EN = [ ... ];` —
+         the ENABLE word list (public domain; e.g.
+         https://raw.githubusercontent.com/dolph/dictionary/master/enable1.txt
+         or any ENABLE mirror), filtered to `^[a-z]{5}$`, deduplicated, sorted
+         alphabetically (guess-list order is not load-bearing). Expected count
+         ≈ 8,636; must be ≥ 5,000.
+      2. **`data/solutions-en.js`** (new): `export const SOLUTIONS_EN = [ ... ];`
+         — intersection of `GUESSES_EN` with the FrequencyWords English top-50k
+         (first whitespace-separated column of
+         https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/en/en_50k.txt,
+         lowercased, same filter; expected ≈ 3,791 candidates), then **one
+         bounded curation pass** removing proper-noun homographs and offensive
+         words — a derivation-process instruction for this task, not a
+         mechanically verified property — then **shuffled exactly once**
+         (e.g. `shuf`) and committed in that play order. Must remain ≥ 1,000
+         and a strict subset of `GUESSES_EN`. File header comment (required):
+         `// Play order is load-bearing (ADR-0002): never sort, reorder, or insert — append only.`
+      3. **`test/words-en.test.js`** (new), asserting: every word in both
+         arrays matches `/^[a-z]{5}$/`; no duplicates; every solution is in the
+         guess list; `GUESSES_EN.length >= 5000`; `SOLUTIONS_EN.length >= 1000`;
+         a **head guard** — `SOLUTIONS_EN.slice(0, 10)` deep-equals the ten
+         literal words you commit (copy them into the test after generating;
+         this catches accidental re-sorts of the play order); and a
+         **not-sorted assertion** —
+         `assert.notDeepStrictEqual(SOLUTIONS_EN, [...SOLUTIONS_EN].sort())` —
+         proving the committed play order is not alphabetical.
+
+      Fetching upstream sources happens during this task only; the committed
+      files and test run offline thereafter. Do not commit the raw upstream
+      files.
+
+      ## Acceptance criteria
+      - `data/words-en.js` and `data/solutions-en.js` exist with the exports,
+        counts, subset relation, and do-not-reorder header described above.
+      - The committed solution order is not alphabetical, enforced by the
+        test's `notDeepStrictEqual` not-sorted assertion.
+      - `test/words-en.test.js` pins the first ten solutions and enforces
+        format, size floors, uniqueness, the subset relation, and the
+        not-sorted assertion.
+
+      ## Verification
+      - `node --test test/words-en.test.js` — all list invariants, the head guard, and the not-sorted assertion pass
+      - `node --test test/product-surface.test.js` — the new data files keep the product surface clean
+
+  - key: T3
+    title: "German word lists: enz guesses + curated shuffled solutions"
+    implements: [PRD-001-R1, PRD-001-R4]
+    adr_refs: [ADR-0001, ADR-0002]
+    depends_on: [T1]
+    parallel_ok: true
+    issue: null
+    body: |
+      **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R1, PRD-001-R4 · **ADR:** ADR-0001, ADR-0002
+
+      ## Context
+      Derive and commit the German word-list data files per
+      [ADR-0001](https://github.com/esukram/wordle/blob/main/docs/adr/ADR-0001-word-list-sources.md)
+      and [ADR-0002](https://github.com/esukram/wordle/blob/main/docs/adr/ADR-0002-daily-word-selection.md).
+      The repo has `package.json` with `"type": "module"` — all `.js` files are
+      ES modules; tests live in `test/*.test.js` and run with `node --test`.
+      Derivation details: [RES-001](https://github.com/esukram/wordle/blob/main/docs/research/RES-001-word-list-sourcing.md).
+
+      Create:
+      1. **`data/words-de.js`** (new): `export const GUESSES_DE = [ ... ];` —
+         from the CC0 enz/german-wordlist `words` file
+         (https://raw.githubusercontent.com/enz/german-wordlist/master/words):
+         **lowercase first** (German nouns are capitalized upstream; without
+         lowercasing the yield collapses), then filter `^[a-z]{5}$` (this drops
+         all ä/ö/ü/ß words — R4's exclude-don't-transliterate rule), dedupe,
+         sort alphabetically. Expected ≈ 8,062; must be ≥ 5,000.
+      2. **`data/solutions-de.js`** (new): `export const SOLUTIONS_DE = [ ... ];`
+         — intersection of `GUESSES_DE` with the FrequencyWords German top-50k
+         (first column of
+         https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/de/de_50k.txt,
+         lowercased, same filter; expected ≈ 2,561 candidates), then one bounded
+         curation pass removing proper-noun homographs and offensive words — a
+         derivation-process instruction for this task, not a mechanically
+         verified property — then shuffled exactly once and committed in that
+         play order. Must remain ≥ 1,000 and a strict subset of `GUESSES_DE`.
+         Inflected forms (plurals, conjugations) are allowed as solutions
+         (settled in PRD-001 Open Questions). File header comment (required):
+         `// Play order is load-bearing (ADR-0002): never sort, reorder, or insert — append only.`
+      3. **`test/words-de.test.js`** (new), asserting: every word in both
+         arrays matches `/^[a-z]{5}$/`; no duplicates; every solution is in the
+         guess list; `GUESSES_DE.length >= 5000`; `SOLUTIONS_DE.length >= 1000`;
+         a head guard — `SOLUTIONS_DE.slice(0, 10)` deep-equals the ten
+         literal words committed; and a **not-sorted assertion** —
+         `assert.notDeepStrictEqual(SOLUTIONS_DE, [...SOLUTIONS_DE].sort())` —
+         proving the committed play order is not alphabetical.
+
+      Fetching upstream sources happens during this task only; do not commit
+      the raw upstream files.
+
+      ## Acceptance criteria
+      - `data/words-de.js` and `data/solutions-de.js` exist with the exports,
+        counts, subset relation, umlaut-free content, and do-not-reorder header
+        described above.
+      - The committed solution order is not alphabetical, enforced by the
+        test's `notDeepStrictEqual` not-sorted assertion.
+      - `test/words-de.test.js` pins the first ten solutions and enforces
+        format, size floors, uniqueness, the subset relation, and the
+        not-sorted assertion.
+
+      ## Verification
+      - `node --test test/words-de.test.js` — all list invariants, the head guard, and the not-sorted assertion pass
+      - `node --test test/product-surface.test.js` — the new data files keep the product surface clean
+
+  - key: T4
+    title: "Scoring function with duplicate-letter counting rule"
+    implements: [PRD-001-R1]
+    adr_refs: []
+    depends_on: [T1]
+    parallel_ok: true
+    issue: null
+    body: |
+      **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R1
+
+      ## Context
+      Implement the pure guess-scoring function required by
+      [PRD-001 R1](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md#r1-core-guessing-gameplay).
+      The repo is dependency-free static JS: ES modules (`package.json` has
+      `"type": "module"`), tests in `test/*.test.js` via `node --test`, no DOM
+      access in library modules.
+
+      Create:
+      1. **`js/scoring.js`** (new): `export function score(guess, solution)` —
+         both arguments lowercase 5-letter strings; returns an array of five
+         marks, each `'correct' | 'present' | 'absent'`. Two-pass algorithm:
+         first mark exact-position matches `'correct'` and consume those
+         solution letters; then, left to right, mark a guess letter `'present'`
+         only while unconsumed occurrences of it remain in the solution
+         (consuming one per mark); everything else is `'absent'`. This is the
+         standard counting rule: a letter is marked present at most as many
+         times as it occurs unmatched in the solution.
+      2. **`test/scoring.test.js`** (new) covering at minimum:
+         - all-correct (guess === solution) → five `'correct'`;
+         - no letters shared → five `'absent'`;
+         - PRD case: solution `apple`, guess `paper` →
+           `['present','present','correct','present','absent']`;
+         - PRD case: solution `robot`, guess `oozes` →
+           `['present','correct','absent','absent','absent']`;
+         - a correct-position match consumes before a present-mark of the same
+           letter elsewhere (e.g. solution `abbey`, guess `bebop`:
+           the second guess `b` is correct at index 2 and the first `b` is
+           present, `o`/`p` absent, `e` present).
+
+      ## Acceptance criteria
+      - `score` is a pure function (no DOM, no globals, no state).
+      - Both PRD duplicate-letter cases pass exactly as specified.
+      - The module is importable by Node and the browser unchanged.
+
+      ## Verification
+      - `node --test test/scoring.test.js` — all scoring cases pass
+
+  - key: T5
+    title: "Daily Puzzle date→word mapping per ADR-0002"
+    implements: [PRD-001-R2]
+    adr_refs: [ADR-0002]
+    depends_on: [T2, T3]
+    parallel_ok: true
+    issue: null
+    body: |
+      **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R2 · **ADR:** ADR-0002
+
+      ## Context
+      Implement the deterministic date→word mapping decided in
+      [ADR-0002](https://github.com/esukram/wordle/blob/main/docs/adr/ADR-0002-daily-word-selection.md)
+      for [PRD-001 R2](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md#r2-daily-puzzle).
+      Solution lists exist as ES modules: `data/solutions-en.js` exports
+      `SOLUTIONS_EN`, `data/solutions-de.js` exports `SOLUTIONS_DE` — arrays of
+      lowercase 5-letter words committed in load-bearing shuffled play order.
+      Conventions: ES modules (`"type": "module"`), tests in `test/*.test.js`
+      via `node --test`, no DOM in library modules.
+
+      Create **`js/daily.js`** (new) exporting:
+      - `EPOCH` — constructed as **local midnight**: `new Date(2026, 6, 1)`
+        (2026-07-01). Never a fixed-milliseconds constant (ADR-0002 binds this).
+      - `dayIndex(now = new Date())` — take local midnight of `now` via
+        `new Date(now.getFullYear(), now.getMonth(), now.getDate())`, then
+        `Math.round((localMidnight - EPOCH) / 864e5)`. `Math.round` absorbs
+        23/25-hour DST days.
+      - `dailySolution(language, now = new Date())` — `language` is `'en'` or
+        `'de'`; picks `list[((i % N) + N) % N]` where `i = dayIndex(now)` and
+        `list`/`N` are the Language's solution list and length. The
+        normalization is required because JS `%` takes the dividend's sign;
+        the modulo wrap is the accepted exhaustion backstop.
+
+      And **`test/daily.test.js`** (new) pinning ADR-0002's confirmation cases:
+      - determinism: same `(date, language)` twice → identical word;
+      - consecutive dates: for every adjacent pair over a ≥ 400-day sampled
+        range, `dayIndex` differs by exactly 1 (hence different list indexes);
+      - DST straddle: date pairs around the last Sundays of March and October
+        (e.g. 2027-03-27/28 and 2027-10-30/31) → `dayIndex` differs by
+        exactly 1;
+      - pre-epoch date (e.g. 2026-06-15) → `dailySolution` still returns a word
+        from the list (normalized index in range);
+      - per-Language independence: for one date, the English word is in
+        `SOLUTIONS_EN` and the German word is in `SOLUTIONS_DE` (two separate
+        lists, unrelated words).
+
+      ## Acceptance criteria
+      - The mapping is a pure function of (local date, Language); no network,
+        no storage, no DOM.
+      - Epoch is the local-midnight `Date` constructor form, never a fixed-ms
+        value.
+      - All five test groups above pass.
+
+      ## Verification
+      - `node --test test/daily.test.js` — determinism, adjacency, DST, pre-epoch, and independence cases pass
+
+  - key: T6
+    title: "Statistics update logic and localStorage schema"
+    implements: [PRD-001-R5, PRD-001-R6]
+    adr_refs: []
+    depends_on: [T1]
+    parallel_ok: true
+    issue: null
+    body: |
+      **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R5, PRD-001-R6
+
+      ## Context
+      Implement the pure Statistics logic
+      ([PRD-001 R5](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md#r5-statistics-per-language))
+      and the versioned localStorage schema
+      ([R6](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md#r6-in-progress-persistence)).
+      Vocabulary per [CONTEXT.md](https://github.com/esukram/wordle/blob/main/CONTEXT.md):
+      Statistics are per-Language and only Daily Puzzle results update them.
+      Conventions: ES modules (`"type": "module"`), tests in `test/*.test.js`
+      via `node --test`, no DOM/localStorage access at module top level.
+
+      **localStorage key schema (v1)** — this plan owns the layout (PRD Open
+      Questions); all keys are strings, all values JSON:
+      - `wortex.v1.lang` → `"en"` or `"de"`
+      - `wortex.v1.stats.en` / `wortex.v1.stats.de` →
+        `{"played":0,"wins":0,"losses":0,"currentStreak":0,"maxStreak":0,"dist":[0,0,0,0,0,0],"lastDayIndex":null}`
+      - `wortex.v1.daily.en` / `wortex.v1.daily.de` →
+        `{"dayIndex":<int>,"guesses":["<word>",...],"status":"playing"|"won"|"lost"}`
+
+      Create:
+      1. **`js/stats.js`** (new): `export function emptyStats()` returning the
+         zeroed shape above, and
+         `export function updateStats(stats, { won, attempts, dayIndex })` —
+         pure, returns a **new** stats object: `played + 1`; on win `wins + 1`
+         and `dist[attempts - 1] + 1`; on loss `losses + 1`; streak rule:
+         win with `stats.lastDayIndex === dayIndex - 1` → `currentStreak + 1`,
+         win otherwise (first game or missed date) → `1`, loss → `0`;
+         `maxStreak = max(maxStreak, currentStreak)`; `lastDayIndex = dayIndex`.
+      2. **`js/storage.js`** (new): thin wrapper owning the key schema.
+         `export function createStorage(backend = globalThis.localStorage)`
+         returning `{ getLang, setLang, getStats(lang), setStats(lang, stats),
+         getDaily(lang), setDaily(lang, state), clearDaily(lang) }` — JSON
+         (de)serialization, `emptyStats()` fallback for missing/corrupt stats,
+         `null` for missing daily state. The injectable `backend` (anything
+         with `getItem`/`setItem`/`removeItem`) makes it testable in Node.
+      3. **`test/stats.test.js`** (new): win, loss, streak increment on
+         consecutive `dayIndex`, streak reset to 1 on win after a gap, streak
+         reset to 0 on loss, distribution bucketing, `maxStreak` retention,
+         purity (input object unmodified).
+      4. **`test/storage.test.js`** (new): with a plain-object `Map`-backed
+         stub backend — English and German stats live under separate keys and
+         update independently; round-trip of daily state; corrupt JSON falls
+         back safely.
+
+      ## Acceptance criteria
+      - `updateStats` covers every case in R5's acceptance criteria as a pure
+        function.
+      - English and German Statistics use the separate keys above and never
+        interfere.
+      - No module touches `localStorage` at import time (Node-importable).
+
+      ## Verification
+      - `node --test test/stats.test.js test/storage.test.js` — all stats and storage cases pass
+
+  - key: T7
+    title: "Static HTML shell and CSS"
+    implements: [PRD-001-R1, PRD-001-R7]
+    adr_refs: []
+    depends_on: []
+    parallel_ok: true
+    issue: null
+    body: |
+      **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R1, PRD-001-R7
+
+      ## Context
+      Create the complete static markup and styling for Wortex per
+      [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md)
+      (R1 grid/keyboard structure, R7 static delivery). Later tasks add only
+      JavaScript behavior — ship all containers now. The game name is
+      **Wortex** ([CONTEXT.md](https://github.com/esukram/wordle/blob/main/CONTEXT.md));
+      no third-party game or publisher may be named anywhere (R7).
+
+      Create:
+      1. **`index.html`** (new, repo root): `<!doctype html>`, `lang="en"`,
+         viewport meta, title `Wortex`, `<link rel="stylesheet" href="css/style.css">`,
+         `<script type="module" src="js/app.js"></script>` (the script file
+         arrives in a later task; a 404 until then is expected). Required
+         elements with these exact ids:
+         - header with the title, `#lang-toggle` (Language switch button),
+           `#stats-button` (opens Statistics);
+         - mode controls: `#mode-daily` and `#mode-free` (Daily Puzzle /
+           Free Play toggle buttons), `#new-round` (Free Play new-round button,
+           initially hidden);
+         - `#message` (transient message/rejection-cue area, `aria-live="polite"`);
+         - `#board` (empty container; JS renders the 5×6 tile grid);
+         - `#keyboard` (empty container; JS renders the on-screen keyboard);
+         - `#stats-modal` (hidden modal shell with a `#stats-content` container
+           and a close button `#stats-close`).
+      2. **`css/style.css`** (new): layout (centered column, responsive board),
+         tile states via classes `.correct` (green), `.present` (yellow),
+         `.absent` (gray), pre-reveal/empty tile styles, on-screen keyboard key
+         styles reusing the same three state classes, hidden-state utility
+         class (e.g. `.hidden { display: none; }`), modal styling, visible
+         rejection cue (e.g. a `.shake` animation class on the current row).
+
+      No external fonts, no CDN links, no network references of any kind —
+      same-origin files only (R7).
+
+      ## Acceptance criteria
+      - Opening the page via `python3 -m http.server` renders the styled shell
+        (header, empty board and keyboard containers, hidden modal) with no
+        external requests except its own files.
+      - All ids listed above exist exactly once.
+      - No third-party game/publisher names anywhere in the markup or CSS.
+
+      ## Verification
+      - `for id in lang-toggle stats-button mode-daily mode-free new-round message board keyboard stats-modal stats-content stats-close; do grep -q "id=\"$id\"" index.html || exit 1; done` — all required ids present
+      - `grep -q 'css/style.css' index.html && grep -q 'js/app.js' index.html && grep -q '<title>Wortex</title>' index.html` — stylesheet, module script, and title wired
+      - `! grep -Eqi 'https?://' index.html css/style.css` — no external URLs on the product surface
+
+  - key: T8
+    title: "Round controller, keyboard layouts, and board/keyboard UI"
+    implements: [PRD-001-R1, PRD-001-R4]
+    adr_refs: []
+    depends_on: [T2, T4, T7]
+    parallel_ok: true
+    issue: null
+    body: |
+      **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R1, PRD-001-R4
+
+      ## Context
+      Implement the playable round per
+      [PRD-001 R1](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md#r1-core-guessing-gameplay):
+      DOM-free game logic plus the UI layer. Already in the repo:
+      - `js/scoring.js` — `score(guess, solution)` → array of five
+        `'correct'|'present'|'absent'` marks (duplicate counting rule inside);
+      - `data/words-en.js` — `export const GUESSES_EN` (lowercase 5-letter
+        valid guesses);
+      - `data/solutions-en.js` — `export const SOLUTIONS_EN`;
+      - `index.html` with containers `#board`, `#keyboard`, `#message`, and
+        `css/style.css` with tile/key state classes `.correct`, `.present`,
+        `.absent` and a `.shake` rejection-cue class.
+      Conventions: ES modules (`"type": "module"`); tests in `test/*.test.js`
+      via `node --test`; **library modules never touch the DOM**; `js/app.js`
+      must be import-safe in Node — it only calls its init function when
+      `typeof document !== 'undefined'`.
+
+      Create:
+      1. **`js/game.js`** (new, DOM-free): round state machine.
+         - `createRound(solution, guessSet)` → `{ solution, guesses: [], status: 'playing' }`
+           (`guessSet` is a `Set` of valid guesses);
+         - `submitGuess(round, word)` → pure; returns
+           `{ round, rejected: true }` unchanged when `word` is not in the
+           guess set (an invalid guess never consumes an attempt), otherwise a
+           new round with `{ word, marks }` appended (marks via
+           `score(word, solution)`), `status` flipping to `'won'` when
+           `word === solution` and `'lost'` after the 6th wrong guess;
+         - `keyStates(guesses)` → map letter → best-known state with precedence
+           `correct > present > absent` (feeds the on-screen keyboard).
+      2. **`js/keyboard.js`** (new, DOM-free data + render helpers):
+         `export const LAYOUTS = { en: ['qwertyuiop','asdfghjkl','zxcvbnm'], de: ['qwertzuiop','asdfghjkl','yxcvbnm'] }`
+         (QWERTY / QWERTZ per R4) plus Enter and Backspace keys on the bottom
+         row.
+      3. **`js/app.js`** (new): browser wiring — render the 5×6 grid into
+         `#board`; render the on-screen keyboard for a given layout into
+         `#keyboard` and re-color keys from `keyStates`; handle on-screen
+         clicks and physical `keydown` (letters, Enter, Backspace); on submit
+         of a non-valid guess show a rejection cue (`.shake` on the current row
+         plus a `#message` text) without consuming an attempt; on win/loss show
+         a visible end state in `#message` (revealing the solution on loss) and
+         stop input. For now boot a single round against a fixed English
+         solution using `GUESSES_EN` (the Daily Puzzle / Free Play / Language
+         modes arrive in later tasks). Guard all DOM work behind
+         `if (typeof document !== 'undefined')`.
+      4. **`test/game.test.js`** (new): valid guess consumes an attempt and
+         yields 5 marks; invalid guess rejected with round unchanged; win on
+         exact match; loss after 6 wrong guesses; `keyStates` precedence
+         (correct beats present beats absent across multiple guesses).
+      5. **`test/keyboard.test.js`** (new): both layouts contain exactly 26
+         distinct a–z letters; `en` top row starts `qwerty`, `de` top row
+         starts `qwertz`.
+
+      ## Acceptance criteria
+      - A round is fully playable in the browser via physical and on-screen
+        keyboard: colored tiles, keyboard state mirroring, rejection cue,
+        win/lose end states.
+      - `js/game.js` and `js/keyboard.js` are pure/DOM-free and Node-testable.
+      - `js/app.js` imports cleanly in Node without a DOM.
+
+      ## Verification
+      - `node --test test/game.test.js test/keyboard.test.js` — round logic, key states, and layouts pass
+      - `node -e "import('./js/app.js').then(()=>{},e=>{console.error(e);process.exit(1)})"` — app module and all its imports load without a DOM
+
+  - key: T9
+    title: "Daily Puzzle mode: wiring, in-progress persistence, no-replay"
+    implements: [PRD-001-R2, PRD-001-R6]
+    adr_refs: [ADR-0002]
+    depends_on: [T5, T6, T8]
+    parallel_ok: false
+    issue: null
+    body: |
+      **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R2, PRD-001-R6 · **ADR:** ADR-0002
+
+      ## Context
+      Wire the Daily Puzzle mode per
+      [PRD-001 R2](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md#r2-daily-puzzle)
+      and [R6](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md#r6-in-progress-persistence),
+      constrained by
+      [ADR-0002](https://github.com/esukram/wordle/blob/main/docs/adr/ADR-0002-daily-word-selection.md)'s
+      day-index semantics. Already in the repo:
+      - `js/daily.js` — `dayIndex(now?)` and `dailySolution(language, now?)`;
+      - `js/game.js` — `createRound(solution, guessSet)`,
+        `submitGuess(round, word)`, `keyStates(guesses)`; round shape
+        `{ solution, guesses: [{word, marks}], status: 'playing'|'won'|'lost' }`;
+      - `js/storage.js` — `createStorage(backend?)` with
+        `getDaily(lang)` / `setDaily(lang, state)` / `clearDaily(lang)` over key
+        `wortex.v1.daily.<lang>`, value
+        `{"dayIndex":<int>,"guesses":["<word>",...],"status":"playing"|"won"|"lost"}`;
+      - `js/app.js` — board/keyboard rendering and input handling, currently
+        booting a fixed round; `#mode-daily`, `#mode-free`, `#message` exist in
+        `index.html`.
+      Conventions: ES modules; tests in `test/*.test.js` via `node --test`;
+      library modules DOM-free; `js/app.js` import-safe in Node (DOM work
+      guarded by `typeof document !== 'undefined'`).
+
+      Changes:
+      1. **`js/game.js`** (edit): add DOM-free
+         `restoreRound(words, solution, guessSet)` — replays a stored guess
+         list through `submitGuess` to rebuild the full round (marks, status),
+         and `serializeRound(round, dayIndex)` → the stored daily shape above.
+      2. **`js/app.js`** (edit): make Daily Puzzle the default mode. On boot
+         (per active Language, default `'en'` for now): compute today's
+         `dayIndex` and `dailySolution`; load stored daily state; if stored
+         `dayIndex` matches today, restore the round (grid, keyboard states,
+         remaining attempts) — including finished states, which render the end
+         state and block further input (no replay until the next date); if
+         stored `dayIndex` differs, discard it (`clearDaily`) and start fresh.
+         Persist via `setDaily` after every accepted guess and on round end.
+      3. **`test/daily-state.test.js`** (new): `restoreRound` rebuilds marks,
+         status and attempt count from stored words (in-progress, won, and
+         lost cases); `serializeRound` round-trips through `restoreRound`;
+         stale-date logic — a stored state whose `dayIndex` differs from
+         today's is not restored (test the pure decision helper you extract
+         for this, e.g. `isFreshDaily(stored, todayIndex)` in `js/game.js`).
+
+      ## Acceptance criteria
+      - Reload mid-Daily-Puzzle restores grid, keyboard state, and remaining
+        attempts exactly; reload after finishing shows the finished end state,
+        not a fresh grid.
+      - Stored state from a previous date is discarded when a new date's Daily
+        Puzzle begins.
+      - All persistence goes through `js/storage.js` (key
+        `wortex.v1.daily.<lang>`); no direct `localStorage` calls in `app.js`.
+
+      ## Verification
+      - `node --test test/daily-state.test.js` — restore, serialize, and stale-date cases pass
+      - `node --test test/` — full suite stays green
+      - `node -e "import('./js/app.js').then(()=>{},e=>{console.error(e);process.exit(1)})"` — app module still loads without a DOM
+
+  - key: T10
+    title: "Free Play mode"
+    implements: [PRD-001-R3]
+    adr_refs: []
+    depends_on: [T8, T9]
+    parallel_ok: false
+    issue: null
+    body: |
+      **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R3
+
+      ## Context
+      Add Free Play per
+      [PRD-001 R3](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md#r3-free-play):
+      unlimited rounds against random solutions, never touching Statistics
+      (vocabulary per
+      [CONTEXT.md](https://github.com/esukram/wordle/blob/main/CONTEXT.md)).
+      Already in the repo:
+      - `js/game.js` — `createRound(solution, guessSet)`, `submitGuess`,
+        `keyStates`;
+      - `data/solutions-en.js` — `SOLUTIONS_EN`;
+      - `js/app.js` — board/keyboard rendering, input handling, and the Daily
+        Puzzle boot flow with per-date persistence/restore via `js/storage.js`
+        (`getDaily`/`setDaily`/`clearDaily` over key `wortex.v1.daily.<lang>`);
+      - `index.html` — `#mode-daily`, `#mode-free`, and a hidden `#new-round`
+        button.
+      Conventions: ES modules; tests in `test/*.test.js` via `node --test`;
+      library modules DOM-free; `js/app.js` import-safe in Node.
+
+      Changes:
+      1. **`js/game.js`** (edit): add DOM-free
+         `randomSolution(list, rng = Math.random)` →
+         `list[Math.floor(rng() * list.length)]`.
+      2. **`js/app.js`** (edit): `#mode-free` switches to Free Play — a fresh
+         round with `randomSolution` over the active Language's solution list;
+         show `#new-round`, which starts another random round at any time
+         (immediately after a finished round included). `#mode-daily` switches
+         back to the Daily Puzzle (restoring its persisted state). Free Play
+         writes **nothing** to storage: no Statistics update, no daily-state
+         write — the Statistics-recording code path must be reachable only
+         from the Daily Puzzle flow.
+      3. **`test/freeplay.test.js`** (new): `randomSolution` returns a list
+         member for boundary rng values (0 and 0.999…) and honors an injected
+         deterministic rng; starting a new round after a finished one yields an
+         independent `'playing'` round with zero guesses.
+
+      ## Acceptance criteria
+      - Free Play rounds can be started back-to-back without reload.
+      - Statistics and daily-state localStorage values are byte-identical
+        before and after a completed Free Play round (structurally: the Free
+        Play flow calls no storage writer).
+      - Daily ↔ Free Play switching preserves the Daily Puzzle's persisted
+        state.
+
+      ## Verification
+      - `node --test test/freeplay.test.js` — picker and new-round cases pass
+      - `node --test test/` — full suite stays green
+      - `node -e "import('./js/app.js').then(()=>{},e=>{console.error(e);process.exit(1)})"` — app module still loads without a DOM
+
+  - key: T11
+    title: "Statistics view and Daily Puzzle result recording"
+    implements: [PRD-001-R5]
+    adr_refs: []
+    depends_on: [T6, T9]
+    parallel_ok: false
+    issue: null
+    body: |
+      **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R5
+
+      ## Context
+      Surface Statistics per
+      [PRD-001 R5](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md#r5-statistics-per-language)
+      and record Daily Puzzle outcomes. Already in the repo:
+      - `js/stats.js` — `emptyStats()`,
+        `updateStats(stats, { won, attempts, dayIndex })` (pure; streak and
+        distribution rules inside); stats shape
+        `{played, wins, losses, currentStreak, maxStreak, dist:[6], lastDayIndex}`;
+      - `js/storage.js` — `createStorage(backend?)` with `getStats(lang)` /
+        `setStats(lang, stats)` over keys `wortex.v1.stats.<lang>`;
+      - `js/app.js` — Daily Puzzle flow with a round-end point (status flips to
+        `'won'`/`'lost'`);
+      - `index.html` — `#stats-button`, `#stats-modal` (hidden), `#stats-content`,
+        `#stats-close`; `css/style.css` has modal styles.
+      Conventions: ES modules; tests in `test/*.test.js` via `node --test`;
+      library modules DOM-free; `js/app.js` import-safe in Node. Only Daily
+      Puzzle results update Statistics — Free Play never does.
+
+      Changes:
+      1. **`js/statsview.js`** (new, DOM-free): `renderStats(stats)` → an HTML
+         string for `#stats-content`: games played, win percentage, current
+         streak, max streak, and a guess-distribution bar per attempt count 1–6
+         (bar width proportional to the bucket's share of the max bucket;
+         counts shown as text so the output is assertable).
+      2. **`js/app.js`** (edit): on Daily Puzzle round end, run
+         `updateStats(getStats(lang), { won, attempts, dayIndex })`, persist
+         with `setStats(lang, ...)`, then open `#stats-modal` populated via
+         `renderStats`. `#stats-button` opens the modal with the active
+         Language's current Statistics at any time; `#stats-close` closes it.
+      3. **`css/style.css`** (edit): distribution-bar styling.
+      4. **`test/stats-view.test.js`** (new): `renderStats` output contains
+         the played/streak/max-streak numbers and one bar per bucket with the
+         correct counts; zero-stats input renders without division-by-zero
+         artifacts (0% win rate, empty bars).
+
+      ## Acceptance criteria
+      - Finishing a Daily Puzzle persists updated Statistics under
+        `wortex.v1.stats.<lang>` and opens the statistics view showing the new
+        values.
+      - The view shows games played, wins, losses (or win %), current streak,
+        max streak, and the 1–6 guess distribution for the active Language.
+      - Free Play still records nothing (recording lives only in the Daily
+        round-end path).
+
+      ## Verification
+      - `node --test test/stats-view.test.js` — rendering cases pass
+      - `node --test test/` — full suite stays green
+      - `node -e "import('./js/app.js').then(()=>{},e=>{console.error(e);process.exit(1)})"` — app module still loads without a DOM
+
+  - key: T12
+    title: "Language switching, default detection, and persistence"
+    implements: [PRD-001-R4]
+    adr_refs: []
+    depends_on: [T6, T8, T9, T10, T11]
+    parallel_ok: false
+    issue: null
+    body: |
+      **PRD:** [PRD-001](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md) · **Implements:** PRD-001-R4
+
+      ## Context
+      Make Language a first-class switch per
+      [PRD-001 R4](https://github.com/esukram/wordle/blob/main/docs/prd/PRD-001-wortex.md#r4-language-switching)
+      (vocabulary per
+      [CONTEXT.md](https://github.com/esukram/wordle/blob/main/CONTEXT.md)).
+      Already in the repo:
+      - `data/words-en.js` / `data/words-de.js` — `GUESSES_EN` / `GUESSES_DE`;
+        `data/solutions-en.js` / `data/solutions-de.js` — `SOLUTIONS_EN` /
+        `SOLUTIONS_DE`;
+      - `js/keyboard.js` — `LAYOUTS.en` (QWERTY) and `LAYOUTS.de` (QWERTZ);
+      - `js/daily.js` — `dailySolution(language, now?)`;
+      - `js/storage.js` — `createStorage(backend?)` with `getLang()` /
+        `setLang(lang)` (key `wortex.v1.lang`), per-Language stats and daily
+        state (keys `wortex.v1.stats.<lang>`, `wortex.v1.daily.<lang>`);
+      - `js/statsview.js` — `renderStats(stats)`;
+      - `js/app.js` — Daily Puzzle (with per-Language persistence/restore),
+        Free Play, Statistics recording/view, currently hardwired to `'en'`;
+        `#lang-toggle` exists in `index.html`.
+      Conventions: ES modules; tests in `test/*.test.js` via `node --test`;
+      library modules DOM-free; `js/app.js` import-safe in Node.
+
+      Changes:
+      1. **`js/language.js`** (new, DOM-free):
+         `export function defaultLanguage(navLang)` → `'de'` when `navLang` is
+         a string starting with `'de'` (case-insensitive, e.g. `de`, `de-AT`),
+         else `'en'`; and a Language config map
+         `{ en: { guesses, solutions, layout }, de: { ... } }` assembling the
+         imports above so `app.js` switches through one object.
+      2. **`js/app.js`** (edit): resolve the active Language on boot —
+         `getLang()` from storage, else
+         `defaultLanguage(navigator.language)` — and persist every change via
+         `setLang`. `#lang-toggle` flips en ↔ de and re-wires everything from
+         the config map: valid-guess dictionary, solution source (Daily Puzzle
+         via `dailySolution(lang)` with that Language's persisted daily state
+         restored, or a new Free Play round from that Language's solutions),
+         on-screen keyboard layout (QWERTY ↔ QWERTZ), and the displayed
+         Statistics. The two Languages' Daily Puzzles are independent — both
+         playable on the same date, each with its own persisted state and
+         Statistics.
+      3. **`test/language.test.js`** (new): `defaultLanguage` returns `'de'`
+         for `'de'`, `'de-AT'`, `'DE-de'`; `'en'` for `'en-US'`, `'fr'`,
+         `undefined`; the config map wires `de` to `GUESSES_DE`/`SOLUTIONS_DE`/
+         QWERTZ layout and `en` to `GUESSES_EN`/`SOLUTIONS_EN`/QWERTY layout.
+
+      ## Acceptance criteria
+      - Switching Language swaps dictionary, keyboard layout, and displayed
+        Statistics; the choice survives reload via `wortex.v1.lang`.
+      - First visit with a `de*` browser language starts in German, otherwise
+        English.
+      - English and German Daily Puzzles of the same date are independent and
+        both playable.
+
+      ## Verification
+      - `node --test test/language.test.js` — default detection and config wiring pass
+      - `node --test test/` — full suite stays green
+      - `node -e "import('./js/app.js').then(()=>{},e=>{console.error(e);process.exit(1)})"` — app module still loads without a DOM
