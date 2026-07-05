@@ -1,0 +1,228 @@
+:root {
+  --tile-empty-border: #d3d6da;
+  --tile-filled-border: #878a8c;
+  --key-bg: #d3d6da;
+  --correct: #6aaa64;
+  --present: #c9b458;
+  --absent: #787c7e;
+  --text: #1a1a1b;
+  --bg: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: system-ui, "Segoe UI", Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Header */
+#header {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--tile-empty-border);
+}
+
+#title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Buttons */
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--tile-filled-border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 0.4rem 0.7rem;
+}
+
+button:hover {
+  background: var(--key-bg);
+}
+
+/* Main column */
+#main {
+  width: 100%;
+  max-width: 500px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+#mode-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Transient message / rejection cue area */
+#message {
+  min-height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Board — JS renders 6 rows of 5 tiles */
+#board {
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+  gap: 5px;
+  width: min(330px, 80vw);
+  aspect-ratio: 5 / 6;
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--tile-empty-border);
+  font-size: 1.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  user-select: none;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.tile.filled {
+  border-color: var(--tile-filled-border);
+}
+
+/* Shared tile / key state classes */
+.tile.correct,
+.key.correct {
+  background: var(--correct);
+  border-color: var(--correct);
+  color: #fff;
+}
+
+.tile.present,
+.key.present {
+  background: var(--present);
+  border-color: var(--present);
+  color: #fff;
+}
+
+.tile.absent,
+.key.absent {
+  background: var(--absent);
+  border-color: var(--absent);
+  color: #fff;
+}
+
+/* Rejection cue */
+.board-row.shake {
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-6px); }
+  40%, 60% { transform: translateX(6px); }
+}
+
+/* On-screen keyboard — JS renders rows of keys */
+#keyboard {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.key {
+  flex: 1;
+  min-width: 0;
+  height: 3.5rem;
+  max-width: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: var(--key-bg);
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+
+.key.wide {
+  flex: 1.5;
+  max-width: 4.5rem;
+  font-size: 0.75rem;
+}
+
+/* Statistics modal */
+#stats-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-panel {
+  position: relative;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: min(90vw, 400px);
+  box-shadow: 0 4px 23px rgba(0, 0, 0, 0.2);
+}
+
+#stats-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+}
