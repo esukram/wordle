@@ -5,14 +5,23 @@
 // DOM-free modules game.js / keyboard.js / scoring.js.
 
 import { GUESSES_EN } from '../data/words-en.js';
-import { createRound, submitGuess, keyStates, MAX_GUESSES } from './game.js';
+import {
+  createRound,
+  submitGuess,
+  keyStates,
+  restoreRound,
+  serializeRound,
+  isFreshDaily,
+  MAX_GUESSES,
+} from './game.js';
 import { layoutRows } from './keyboard.js';
+import { dayIndex, dailySolution } from './daily.js';
+import { createStorage } from './storage.js';
 
 const WORD_LENGTH = 5;
 
-// Fixed English round for now; Daily Puzzle / Free Play / Language modes land
-// in later tasks.
-const SOLUTION = 'crane';
+// Daily Puzzle is the default mode; Free Play / Language selection land in
+// later tasks, so the active Language is fixed to English for now.
 const LANG = 'en';
 
 export function init(doc) {
@@ -20,8 +29,23 @@ export function init(doc) {
   const keyboard = doc.getElementById('keyboard');
   const message = doc.getElementById('message');
 
+  const storage = createStorage();
+  const today = dayIndex();
+  const solution = dailySolution(LANG);
+
   const guessSet = new Set(GUESSES_EN);
-  let round = createRound(SOLUTION, guessSet);
+
+  // Restore today's puzzle if a matching state is stored; a stale date's state
+  // is discarded so the new day starts fresh (ADR-0002, no replay of a
+  // finished puzzle before the next date).
+  const stored = storage.getDaily(LANG);
+  let round;
+  if (isFreshDaily(stored, today)) {
+    round = restoreRound(stored.guesses, solution, guessSet);
+  } else {
+    if (stored) storage.clearDaily(LANG);
+    round = createRound(solution, guessSet);
+  }
   let typed = '';
 
   // --- Board -------------------------------------------------------------
@@ -92,6 +116,13 @@ export function init(doc) {
     message.textContent = text;
   }
 
+  function announceEnd() {
+    if (round.status === 'won') showMessage('You solved it!');
+    else if (round.status === 'lost') {
+      showMessage(`Out of guesses — the answer was ${solution.toUpperCase()}`);
+    }
+  }
+
   function reject() {
     const rowEl = rows[round.guesses.length].row;
     rowEl.classList.remove('shake');
@@ -118,10 +149,8 @@ export function init(doc) {
       showMessage('');
       renderBoard();
       renderKeyboard();
-      if (round.status === 'won') showMessage('You solved it!');
-      else if (round.status === 'lost') {
-        showMessage(`Out of guesses — the answer was ${SOLUTION.toUpperCase()}`);
-      }
+      storage.setDaily(LANG, serializeRound(round, today));
+      announceEnd();
       return;
     }
 
@@ -151,6 +180,7 @@ export function init(doc) {
 
   renderBoard();
   renderKeyboard();
+  announceEnd();
 }
 
 if (typeof document !== 'undefined') {
