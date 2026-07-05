@@ -226,3 +226,59 @@ button:hover {
   line-height: 1;
   padding: 0.25rem 0.5rem;
 }
+
+.stats-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+}
+
+.stats-summary div {
+  flex: 1 1 4rem;
+  text-align: center;
+}
+
+.stats-summary dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.stats-summary dd {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.dist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dist-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dist-label {
+  width: 1rem;
+  text-align: right;
+  font-size: 0.875rem;
+}
+
+.dist-bar {
+  display: inline-flex;
+  justify-content: flex-end;
+  min-width: 1.5rem;
+  padding: 0.1rem 0.4rem;
+  background: var(--correct, #6aaa64);
+  color: #fff;
+  font-size: 0.875rem;
+  border-radius: 3px;
+}
