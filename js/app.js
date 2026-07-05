@@ -5,6 +5,7 @@
 // DOM-free modules game.js / keyboard.js / scoring.js.
 
 import { GUESSES_EN } from '../data/words-en.js';
+import { SOLUTIONS_EN } from '../data/solutions-en.js';
 import {
   createRound,
   submitGuess,
@@ -12,6 +13,7 @@ import {
   restoreRound,
   serializeRound,
   isFreshDaily,
+  randomSolution,
   MAX_GUESSES,
 } from './game.js';
 import { layoutRows } from './keyboard.js';
@@ -29,24 +31,33 @@ export function init(doc) {
   const keyboard = doc.getElementById('keyboard');
   const message = doc.getElementById('message');
 
+  const modeDailyBtn = doc.getElementById('mode-daily');
+  const modeFreeBtn = doc.getElementById('mode-free');
+  const newRoundBtn = doc.getElementById('new-round');
+
   const storage = createStorage();
   const today = dayIndex();
-  const solution = dailySolution(LANG);
+  const dailyWord = dailySolution(LANG);
 
   const guessSet = new Set(GUESSES_EN);
+
+  // 'daily' persists to storage and updates Statistics; 'free' (PRD-001 R3)
+  // writes nothing — only the Daily flow may reach a storage writer.
+  let mode = 'daily';
+  let round;
+  let typed = '';
 
   // Restore today's puzzle if a matching state is stored; a stale date's state
   // is discarded so the new day starts fresh (ADR-0002, no replay of a
   // finished puzzle before the next date).
-  const stored = storage.getDaily(LANG);
-  let round;
-  if (isFreshDaily(stored, today)) {
-    round = restoreRound(stored.guesses, solution, guessSet);
-  } else {
+  function loadDailyRound() {
+    const stored = storage.getDaily(LANG);
+    if (isFreshDaily(stored, today)) {
+      return restoreRound(stored.guesses, dailyWord, guessSet);
+    }
     if (stored) storage.clearDaily(LANG);
-    round = createRound(solution, guessSet);
+    return createRound(dailyWord, guessSet);
   }
-  let typed = '';
 
   // --- Board -------------------------------------------------------------
   const rows = [];
@@ -119,7 +130,7 @@ export function init(doc) {
   function announceEnd() {
     if (round.status === 'won') showMessage('You solved it!');
     else if (round.status === 'lost') {
-      showMessage(`Out of guesses — the answer was ${solution.toUpperCase()}`);
+      showMessage(`Out of guesses — the answer was ${round.solution.toUpperCase()}`);
     }
   }
 
@@ -149,7 +160,8 @@ export function init(doc) {
       showMessage('');
       renderBoard();
       renderKeyboard();
-      storage.setDaily(LANG, serializeRound(round, today));
+      // Only the Daily Puzzle persists; Free Play writes nothing (PRD-001 R3).
+      if (mode === 'daily') storage.setDaily(LANG, serializeRound(round, today));
       announceEnd();
       return;
     }
@@ -178,9 +190,36 @@ export function init(doc) {
     }
   });
 
-  renderBoard();
-  renderKeyboard();
-  announceEnd();
+  // --- Modes -------------------------------------------------------------
+  // Render whatever round is now active. `#new-round` (start another random
+  // round) is offered in Free Play only.
+  function refresh() {
+    typed = '';
+    showMessage('');
+    newRoundBtn.classList.toggle('hidden', mode !== 'free');
+    renderBoard();
+    renderKeyboard();
+    announceEnd();
+  }
+
+  function startFreeRound() {
+    mode = 'free';
+    round = createRound(randomSolution(SOLUTIONS_EN), guessSet);
+    refresh();
+  }
+
+  function startDaily() {
+    mode = 'daily';
+    round = loadDailyRound();
+    refresh();
+  }
+
+  modeFreeBtn.addEventListener('click', startFreeRound);
+  modeDailyBtn.addEventListener('click', startDaily);
+  // In Free Play a new round can start at any time, finished round included.
+  newRoundBtn.addEventListener('click', startFreeRound);
+
+  startDaily();
 }
 
 if (typeof document !== 'undefined') {

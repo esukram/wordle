@@ -10,6 +10,12 @@ export function createRound(solution, guessSet) {
   return { solution, guesses: [], guessSet, status: 'playing' };
 }
 
+// Pick a random solution from a list for Free Play (PRD-001 R3). DOM-free; the
+// rng is injectable so tests stay deterministic.
+export function randomSolution(list, rng = Math.random) {
+  return list[Math.floor(rng() * list.length)];
+}
+
 // Pure: returns a new round, never mutates the input.
 //
 // An invalid guess (not in the guess set) never consumes an attempt — the round
