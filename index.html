@@ -4,13 +4,50 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Wortex</title>
+  <script>
+    // Presentation preferences (design + light/dark), applied before first
+    // paint so neither flashes. Both persist in localStorage.
+    (() => {
+      const root = document.documentElement;
+      const DESIGNS = { studio: 'Studio', vortex: 'Vortex' };
+      const storedDesign = localStorage.getItem('wortex.design');
+      root.dataset.design = storedDesign in DESIGNS ? storedDesign : 'studio';
+      const storedTheme = localStorage.getItem('wortex.theme');
+      root.dataset.theme = storedTheme === 'dark' || storedTheme === 'light'
+        ? storedTheme
+        : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const themeBtn = document.getElementById('theme-toggle');
+        const designBtn = document.getElementById('design-toggle');
+        const sync = () => {
+          themeBtn.textContent = root.dataset.theme === 'dark' ? '☀️' : '🌙';
+          designBtn.textContent = DESIGNS[root.dataset.design];
+        };
+        themeBtn.addEventListener('click', () => {
+          root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+          localStorage.setItem('wortex.theme', root.dataset.theme);
+          sync();
+        });
+        designBtn.addEventListener('click', () => {
+          root.dataset.design = root.dataset.design === 'studio' ? 'vortex' : 'studio';
+          localStorage.setItem('wortex.design', root.dataset.design);
+          sync();
+        });
+        sync();
+      });
+    })();
+  </script>
   <link rel="stylesheet" href="css/style.css">
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
+  <div id="app">
   <header id="header">
     <h1 id="title">Wortex</h1>
     <div class="header-actions">
+      <button id="design-toggle" type="button" aria-label="Switch design"></button>
+      <button id="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
       <button id="lang-toggle" type="button">EN</button>
       <button id="stats-button" type="button" aria-label="Statistics">Statistics</button>
     </div>
@@ -29,6 +66,7 @@
 
     <div id="keyboard"></div>
   </main>
+  </div>
 
   <div id="stats-modal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="stats-title">
     <div class="modal-panel">

@@ -1,13 +1,113 @@
+/* Theme tokens: 2 designs (html[data-design]) × light/dark (html[data-theme]).
+   Base :root is Studio light so a no-JS load still renders correctly. */
+
+/* "Studio": floating card on a cool canvas, pill controls. */
 :root {
-  --tile-empty-border: #d3d6da;
-  --tile-filled-border: #878a8c;
-  --key-bg: #d3d6da;
-  --correct: #6aaa64;
-  --present: #c9b458;
-  --absent: #787c7e;
-  --text: #1a1a1b;
-  --bg: #ffffff;
+  --font-display: system-ui, "Segoe UI", sans-serif;
+  --font-body: system-ui, "Segoe UI", sans-serif;
+  --bg: #e8eaf1;
+  --bg-image: none;
+  --text: #171a21;
+  --muted: #5c6370;
+  --panel: #ffffff;
+  --panel-border: #d9dce4;
+  --panel-radius: 22px;
+  --panel-shadow: 0 12px 40px rgba(23, 26, 33, 0.1);
+  --control-bg: #eef0f5;
+  --control-text: #171a21;
+  --control-border: transparent;
+  --control-radius: 999px;
+  --tile-border: #d3d6de;
+  --tile-border-filled: #8a909c;
+  --tile-radius: 6px;
+  --key-bg: #dfe2ea;
+  --key-text: #171a21;
+  --key-radius: 8px;
+  --correct: #3f8d55;
+  --present: #c2972f;
+  --absent: #7b828e;
+  --on-mark: #ffffff;
+  --on-absent: #ffffff;
+  --focus: #3f6dd6;
 }
+
+:root[data-theme="dark"] {
+  --bg: #0e1015;
+  --text: #e8eaf0;
+  --muted: #9aa1ad;
+  --panel: #171a21;
+  --panel-border: #262b35;
+  --panel-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --control-bg: #232833;
+  --control-text: #e8eaf0;
+  --tile-border: #333947;
+  --tile-border-filled: #5c6474;
+  --key-bg: #3d4452;
+  --key-text: #e8eaf0;
+  --correct: #4c9a63;
+  --present: #c3a13c;
+  --absent: #2b303b;
+  --focus: #7b9dee;
+}
+
+/* "Vortex": cosmic canvas with violet/teal glows, glassy blurred panel,
+   gradient masthead, rounded neon tiles. */
+:root[data-design="vortex"] {
+  --font-display: ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  --font-body: system-ui, "Segoe UI", sans-serif;
+  --bg: #e9e7fb;
+  --bg-image:
+    radial-gradient(60rem 40rem at 15% 0%, rgba(109, 92, 255, 0.18), transparent 60%),
+    radial-gradient(50rem 35rem at 90% 100%, rgba(45, 214, 196, 0.16), transparent 60%);
+  --text: #1d1936;
+  --muted: #5d5880;
+  --panel: rgba(255, 255, 255, 0.72);
+  --panel-border: rgba(109, 92, 255, 0.25);
+  --panel-radius: 26px;
+  --panel-shadow: 0 16px 50px rgba(60, 48, 150, 0.14);
+  --control-bg: rgba(109, 92, 255, 0.12);
+  --control-text: #2f2760;
+  --control-border: transparent;
+  --control-radius: 12px;
+  --tile-border: #bcb7e0;
+  --tile-border-filled: #8d86c4;
+  --tile-radius: 12px;
+  --key-bg: #dcd8f3;
+  --key-text: #1d1936;
+  --key-radius: 12px;
+  --correct: #21a179;
+  --present: #d99a26;
+  --absent: #9a96b8;
+  --on-mark: #ffffff;
+  --on-absent: #ffffff;
+  --focus: #6d5cff;
+}
+
+:root[data-design="vortex"][data-theme="dark"] {
+  --bg: #0b0c1d;
+  --bg-image:
+    radial-gradient(60rem 40rem at 20% -10%, rgba(109, 92, 255, 0.28), transparent 60%),
+    radial-gradient(55rem 40rem at 85% 110%, rgba(45, 214, 196, 0.18), transparent 60%);
+  --text: #edeeff;
+  --muted: #8f93bd;
+  --panel: rgba(22, 24, 48, 0.72);
+  --panel-border: rgba(109, 92, 255, 0.35);
+  --panel-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  --control-bg: rgba(109, 92, 255, 0.18);
+  --control-text: #dcd9ff;
+  --tile-border: #2b2f57;
+  --tile-border-filled: #565c93;
+  --key-bg: #262a4e;
+  --key-text: #edeeff;
+  --correct: #2bd39e;
+  --present: #f2bc3f;
+  --absent: #383c63;
+  --on-mark: #0b0c1d;
+  --on-absent: #b9bde0;
+  --focus: #8d7dff;
+}
+
+/* --- Structure ---------------------------------------------------------- */
 
 * {
   box-sizing: border-box;
@@ -16,66 +116,109 @@
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-family: system-ui, "Segoe UI", Arial, sans-serif;
+  font-family: var(--font-body);
   color: var(--text);
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: var(--bg-image);
+  background-attachment: fixed;
 }
 
 .hidden {
   display: none !important;
 }
 
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Bounded app surface — each design frames this panel differently. */
+#app {
+  width: min(100%, 520px);
+  margin-block: clamp(0rem, 4vh, 3rem);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow);
+}
+
+@media (max-width: 560px) {
+  #app {
+    margin-block: 0;
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 100dvh;
+  }
+}
+
 /* Header */
 #header {
-  width: 100%;
-  max-width: 500px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--tile-empty-border);
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--panel-border);
 }
 
 #title {
   margin: 0;
-  font-size: 1.75rem;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
 }
 
 .header-actions {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.4rem;
 }
 
-/* Buttons */
+/* Controls: header buttons + mode buttons share one treatment per design. */
 button {
   font: inherit;
+  font-family: var(--font-body);
   cursor: pointer;
-  border: 1px solid var(--tile-filled-border);
-  border-radius: 4px;
-  background: var(--bg);
-  color: var(--text);
-  padding: 0.4rem 0.7rem;
 }
 
-button:hover {
-  background: var(--key-bg);
+#header button,
+#mode-controls button {
+  background: var(--control-bg);
+  color: var(--control-text);
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+#header button:hover,
+#mode-controls button:hover {
+  filter: brightness(0.93);
+}
+
+:root[data-theme="dark"] #header button:hover,
+:root[data-theme="dark"] #mode-controls button:hover {
+  filter: brightness(1.25);
+}
+
+#theme-toggle {
+  min-width: 2.4rem;
 }
 
 /* Main column */
 #main {
-  width: 100%;
-  max-width: 500px;
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1rem;
-  gap: 1rem;
+  padding: 1.25rem 1.25rem 1.5rem;
+  gap: 1.1rem;
 }
 
 #mode-controls {
@@ -98,7 +241,7 @@ button:hover {
   display: grid;
   grid-template-rows: repeat(6, 1fr);
   gap: 5px;
-  width: min(330px, 80vw);
+  width: min(330px, 84vw);
   aspect-ratio: 5 / 6;
 }
 
@@ -112,17 +255,20 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--tile-empty-border);
+  border: 2px solid var(--tile-border);
+  border-radius: var(--tile-radius);
+  font-family: var(--font-display);
   font-size: 1.75rem;
   font-weight: 700;
   text-transform: uppercase;
   user-select: none;
   color: var(--text);
-  background: var(--bg);
+  background: transparent;
+  transition: background-color 0.15s, border-color 0.15s;
 }
 
 .tile.filled {
-  border-color: var(--tile-filled-border);
+  border-color: var(--tile-border-filled);
 }
 
 /* Shared tile / key state classes */
@@ -130,21 +276,21 @@ button:hover {
 .key.correct {
   background: var(--correct);
   border-color: var(--correct);
-  color: #fff;
+  color: var(--on-mark);
 }
 
 .tile.present,
 .key.present {
   background: var(--present);
   border-color: var(--present);
-  color: #fff;
+  color: var(--on-mark);
 }
 
 .tile.absent,
 .key.absent {
   background: var(--absent);
   border-color: var(--absent);
-  color: #fff;
+  color: var(--on-absent);
 }
 
 /* Rejection cue */
@@ -159,10 +305,18 @@ button:hover {
   40%, 60% { transform: translateX(6px); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .board-row.shake {
+    animation: none;
+  }
+  .tile {
+    transition: none;
+  }
+}
+
 /* On-screen keyboard — JS renders rows of keys */
 #keyboard {
   width: 100%;
-  max-width: 500px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -183,12 +337,13 @@ button:hover {
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--key-radius);
   background: var(--key-bg);
+  color: var(--key-text);
   font-weight: 700;
   text-transform: uppercase;
-  cursor: pointer;
   user-select: none;
+  transition: background-color 0.15s;
 }
 
 .key.wide {
@@ -204,16 +359,18 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 20;
 }
 
 .modal-panel {
   position: relative;
-  background: var(--bg);
-  border-radius: 8px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: min(var(--panel-radius), 16px);
   padding: 1.5rem;
   width: min(90vw, 400px);
-  box-shadow: 0 4px 23px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--panel-shadow);
 }
 
 #stats-close {
@@ -222,9 +379,15 @@ button:hover {
   right: 0.5rem;
   border: none;
   background: transparent;
+  color: var(--muted);
   font-size: 1.5rem;
   line-height: 1;
   padding: 0.25rem 0.5rem;
+}
+
+#stats-title {
+  margin-top: 0;
+  font-family: var(--font-display);
 }
 
 .stats-summary {
@@ -242,7 +405,7 @@ button:hover {
 .stats-summary dt {
   font-size: 0.75rem;
   text-transform: uppercase;
-  opacity: 0.7;
+  color: var(--muted);
 }
 
 .stats-summary dd {
@@ -277,8 +440,24 @@ button:hover {
   justify-content: flex-end;
   min-width: 1.5rem;
   padding: 0.1rem 0.4rem;
-  background: var(--correct, #6aaa64);
-  color: #fff;
+  background: var(--correct);
+  color: var(--on-mark);
   font-size: 0.875rem;
   border-radius: 3px;
+}
+
+/* --- Per-design signatures --------------------------------------------- */
+
+/* Vortex: gradient masthead, glassy panel. */
+[data-design="vortex"] #title {
+  background: linear-gradient(100deg, #6d5cff, #2dd6c4);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+[data-design="vortex"] #app,
+[data-design="vortex"] .modal-panel {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
