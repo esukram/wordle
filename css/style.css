@@ -46,7 +46,8 @@
   --key-text: #e8eaf0;
   --correct: #4c9a63;
   --present: #c3a13c;
-  --absent: #2b303b;
+  --absent: #232833;
+  --on-absent: #9aa1ad;
   --focus: #7b9dee;
 }
 
@@ -97,13 +98,13 @@
   --control-text: #dcd9ff;
   --tile-border: #2b2f57;
   --tile-border-filled: #565c93;
-  --key-bg: #262a4e;
+  --key-bg: #2e3360;
   --key-text: #edeeff;
   --correct: #2bd39e;
   --present: #f2bc3f;
-  --absent: #383c63;
+  --absent: #1d203e;
   --on-mark: #0b0c1d;
-  --on-absent: #b9bde0;
+  --on-absent: #8f93bd;
   --focus: #8d7dff;
 }
 
@@ -293,6 +294,24 @@ button {
   color: var(--on-absent);
 }
 
+/* Reveal: flip each tile in turn; the mark colors appear at the half turn.
+   `both` holds the unmarked 0% look through each tile's stagger delay. */
+.tile.reveal {
+  animation: flip 0.8s ease both;
+  animation-delay: calc(var(--reveal-i) * 0.4s);
+}
+
+@keyframes flip {
+  0% { transform: rotateX(0); }
+  0%, 49% {
+    background: transparent;
+    border-color: var(--tile-border-filled);
+    color: var(--text);
+  }
+  50% { transform: rotateX(90deg); }
+  100% { transform: rotateX(0); }
+}
+
 /* Rejection cue */
 .board-row.shake {
   animation: shake 0.5s;
@@ -306,7 +325,8 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .board-row.shake {
+  .board-row.shake,
+  .tile.reveal {
     animation: none;
   }
   .tile {

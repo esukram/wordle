@@ -173,6 +173,25 @@ export function init(doc) {
     openStats(updated);
   }
 
+  // Flip the freshly submitted row tile by tile, then run `done` (keyboard
+  // colors, end-of-round message) so nothing spoils the reveal early.
+  const reducedMotion =
+    typeof matchMedia === 'function' &&
+    matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function revealRow(rowIndex, done) {
+    if (reducedMotion) {
+      done();
+      return;
+    }
+    rows[rowIndex].tiles.forEach((tile, i) => {
+      tile.style.setProperty('--reveal-i', i);
+      tile.classList.add('reveal');
+    });
+    // 4 × 0.4s stagger + 0.8s flip (matches the .tile.reveal CSS).
+    setTimeout(done, 4 * 400 + 800);
+  }
+
   function reject() {
     const rowEl = rows[round.guesses.length].row;
     rowEl.classList.remove('shake');
@@ -198,14 +217,15 @@ export function init(doc) {
       typed = '';
       showMessage('');
       renderBoard();
-      renderKeyboard();
       // Only the Daily Puzzle persists; Free Play writes nothing (PRD-001 R3).
-      if (mode === 'daily') {
-        storage.setDaily(lang, serializeRound(round, today));
+      // Persist before the reveal delay so a closed tab never loses the guess.
+      if (mode === 'daily') storage.setDaily(lang, serializeRound(round, today));
+      revealRow(round.guesses.length - 1, () => {
+        renderKeyboard();
         // On round end, record Statistics and surface them (PRD-001 R5).
-        if (round.status !== 'playing') recordDailyResult();
-      }
-      announceEnd();
+        if (mode === 'daily' && round.status !== 'playing') recordDailyResult();
+        announceEnd();
+      });
       return;
     }
 
